@@ -70,7 +70,7 @@ const Grid = (function () {
     const cells = gridContainer.querySelectorAll(".grid-cell");
     const columns = Config.getColumns();
 
-    cells.forEach((cell, index) => { 
+    cells.forEach((cell, index) => {
       const row = Math.floor(index / columns);
       const col = index % columns;
       cell.classList.toggle("alive", matrix[row][col]);
@@ -146,13 +146,6 @@ const GameController = (function () {
 
   function initialize() {
     setupEventListeners();
-    setupInitialGrid();
-  }
-
-  function setupInitialGrid() {
-    const gridContainer = document.querySelector(".grid-container");
-    gridContainer.style.setProperty("--grid-width", `${Config.GRID_WIDTH}px`);
-    gridContainer.style.setProperty("--grid-height", `${Config.GRID_HEIGHT}px`);
   }
 
   function setupEventListeners() {
@@ -172,14 +165,28 @@ const GameController = (function () {
   function handleGridFormSubmit(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
-    const { rows, columns } = Config.setCellSize(formData.get("cell-size"));
+    const cellSize = formData.get("cell-size");
+
+    if (!cellSize || cellSize < 20) {
+      alert("Please enter a valid cell size (minimum 20px)");
+      return;
+    }
+
+    const { rows, columns } = Config.setCellSize(cellSize);
+
+    // Show game container and hide setup
+    document.getElementById("setup-container").style.display = "none";
+    document.getElementById("game-container").style.display = "block";
+
     Grid.initialize(rows, columns);
     e.target.reset();
   }
 
   window.addEventListener("resize", () => {
-    Config.updateDimensions();
-    Grid.initialize(Config.getRows(), Config.getColumns());
+    if (document.getElementById("game-container").style.display !== "none") {
+      Config.updateDimensions();
+      Grid.initialize(Config.getRows(), Config.getColumns());
+    }
   });
 
   function startGame() {
