@@ -5,29 +5,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
-    <script type="module" src="./script.js" defer></script>
+    <script src="script.js" defer></script>
     <title>Conway's Game Of Life</title>
 </head>
 
 <body>
-    <h1>Conway's Game Of Life</h1>
-
-    <div id="setup-container">
-        <form action="" id="grid-form" method="get">
-            <label for="cell-size">Enter the width of your cells (px)</label>
-            <input min="20" name="cell-size" type="number" required>
-            <button type="submit">Start Game</button>
-        </form>
-    </div>
-
-    <div id="game-container" style="display: none;">
+    <div class="game-wrapper">
+        <h1>Conway's Game Of Life</h1>
         <div class="grid-container"></div>
         <div class="controls">
-            <button id="start-button">Start</button>
+            <button id="play-button">Play</button>
             <button id="stop-button">Stop</button>
             <button id="clear-button">Clear</button>
-            <input type="number" id="speed-input" placeholder="Speed">
-            <button id="set-speed-button">Set Speed</button>
+            <div class="speed-control">
+                <label for="speed-input">Speed</label>
+                <input type="range" id="speed-input" min="50" max="1000" value="200">
+            </div>
         </div>
     </div>
 </body>

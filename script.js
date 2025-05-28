@@ -1,250 +1,161 @@
-// Configuration Module - Manages game settings and grid dimensions
-const Config = (function () {
-  let cellSize = 20;
-  let columns = 0;
-  let rows = 0;
-  let gameSpeed = 100;
+// Conway's Game of Life - Retro, Responsive, Simple Controls
 
-  function updateDimensions() {
-    const gridContainer = document.querySelector(".grid-container");
-    const rect = gridContainer.getBoundingClientRect();
-    columns = Math.floor(rect.width / cellSize);
-    rows = Math.floor(rect.height / cellSize);
-  }
+const CELL_SIZE = 20; // px, fijo para look retro
+let rows,
+  cols,
+  matrix,
+  intervalId = null;
 
-  return {
-    getCellSize: () => cellSize,
-    getColumns: () => columns,
-    getRows: () => rows,
-    getGameSpeed: () => gameSpeed,
-    setCellSize(size) {
-      cellSize = parseInt(size, 10);
-      updateDimensions();
-      return { columns, rows };
-    },
-    setGameSpeed(speed) {
-      gameSpeed = parseInt(speed, 10);
-      return gameSpeed;
-    },
-    updateDimensions,
-  };
-})();
+const gridContainer = document.querySelector(".grid-container");
+const playBtn = document.getElementById("play-button");
+const stopBtn = document.getElementById("stop-button");
+const clearBtn = document.getElementById("clear-button");
+const speedInput = document.getElementById("speed-input");
 
-// Grid Module - Handles grid creation and rendering
-const Grid = (function () {
-  let matrix = [];
-  const gridContainer = document.querySelector(".grid-container");
+function calculateGridSize() {
+    // Calcula el tamaño cuadrado máximo que cabe en el contenedor, restando padding, border y gaps
+    const computed = window.getComputedStyle(gridContainer);
+    const padding = parseFloat(computed.paddingLeft) + parseFloat(computed.paddingRight);
+    const border = parseFloat(computed.borderLeftWidth) + parseFloat(computed.borderRightWidth);
+    const gap = parseFloat(computed.gap) || 0;
 
-  function initialize(rows, columns) {
-    matrix = Array.from({ length: rows }, () => Array(columns).fill(false));
-    setupGridContainer();
-    renderGrid(rows, columns);
-    return matrix;
-  }
+    // El tamaño real usable
+    const size = gridContainer.clientWidth - padding - border;
+    // Calcula cuántas celdas caben, considerando el gap entre cada una
+    const fit = Math.floor((size + gap) / (CELL_SIZE + gap));
+    cols = rows = fit;
+}
 
-  function setupGridContainer() {
-    gridContainer.style.setProperty("--grid-width", `${Config.GRID_WIDTH}px`);
-    gridContainer.style.setProperty("--grid-height", `${Config.GRID_HEIGHT}px`);
-    gridContainer.style.setProperty("--cell-size", `${Config.getCellSize()}px`);
-    gridContainer.style.setProperty("--grid-columns", Config.getColumns());
-    gridContainer.style.setProperty("--grid-rows", Config.getRows());
-  }
+function createEmptyMatrix() {
+  return Array.from({ length: rows }, () => Array(cols).fill(false));
+}
 
-  function renderGrid(rows, columns) {
-    // Clear existing cells
-    gridContainer.innerHTML = "";
-
-    // Use document fragment for better performance
-    const fragment = document.createDocumentFragment();
-    for (let i = 0; i < rows * columns; i++) {
+function renderGrid() {
+  gridContainer.innerHTML = "";
+  gridContainer.style.setProperty("--cell-size", `${CELL_SIZE}px`);
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
       const cell = document.createElement("div");
-      cell.classList.add("grid-cell");
-      cell.dataset.index = i;
-      cell.addEventListener("click", GameController.toggleCell);
-      fragment.appendChild(cell);
+      cell.className = "grid-cell";
+      if (matrix[r][c]) cell.classList.add("alive");
+      cell.dataset.row = r;
+      cell.dataset.col = c;
+      cell.addEventListener("click", () => {
+        matrix[r][c] = !matrix[r][c];
+        cell.classList.toggle("alive");
+      });
+      gridContainer.appendChild(cell);
     }
-    gridContainer.appendChild(fragment);
   }
+  // Ajusta el grid-template-columns para que siempre sea cuadrado
+  gridContainer.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
+  gridContainer.style.gridTemplateRows = `repeat(${rows}, var(--cell-size))`;
+}
 
-  function updateGrid() {
-    const cells = gridContainer.querySelectorAll(".grid-cell");
-    const columns = Config.getColumns();
-
-    cells.forEach((cell, index) => {
-      const row = Math.floor(index / columns);
-      const col = index % columns;
-      cell.classList.toggle("alive", matrix[row][col]);
-    });
+function updateGrid() {
+  const cells = gridContainer.querySelectorAll(".grid-cell");
+  let i = 0;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (matrix[r][c]) {
+        cells[i].classList.add("alive");
+      } else {
+        cells[i].classList.remove("alive");
+      }
+      i++;
+    }
   }
+}
 
-  return {
-    initialize,
-    updateGrid,
-    getMatrix: () => matrix,
-    setMatrix: (newMatrix) => {
-      matrix = newMatrix;
-    },
-    resetMatrix() {
-      matrix = Array.from({ length: Config.getRows() }, () =>
-        Array(Config.getColumns()).fill(false)
-      );
-      updateGrid();
-    },
-  };
-})();
+function countNeighbors(r, c) {
+  let count = 0;
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const nr = (r + dr + rows) % rows;
+      const nc = (c + dc + cols) % cols;
+      if (matrix[nr][nc]) count++;
+    }
+  }
+  return count;
+}
 
-// Game Engine Module - Handles game logic and rules
-const GameEngine = (function () {
-  function nextGeneration(matrix) {
-    const rows = Config.getRows();
-    const columns = Config.getColumns();
-    const newMatrix = matrix.map((row) => row.slice());
-
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < columns; col++) {
-        const aliveNeighbors = countAliveNeighbors(matrix, row, col);
-        if (matrix[row][col]) {
-          newMatrix[row][col] = aliveNeighbors === 2 || aliveNeighbors === 3;
-        } else {
-          newMatrix[row][col] = aliveNeighbors === 3;
-        }
+function nextGeneration() {
+  const newMatrix = createEmptyMatrix();
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const alive = matrix[r][c];
+      const neighbors = countNeighbors(r, c);
+      if (alive) {
+        newMatrix[r][c] = neighbors === 2 || neighbors === 3;
+      } else {
+        newMatrix[r][c] = neighbors === 3;
       }
     }
-
-    return newMatrix;
   }
+  matrix = newMatrix;
+  updateGrid();
+}
 
-  function countAliveNeighbors(matrix, row, col) {
-    let count = 0;
-    const rows = Config.getRows();
-    const columns = Config.getColumns();
+function play() {
+  if (intervalId) return;
+  playBtn.disabled = true;
+  stopBtn.disabled = false;
+  intervalId = setInterval(nextGeneration, 10000 /  parseInt(speedInput.value));
+}
 
-    for (let i = -1; i <= 1; i++) {
-      for (let j = -1; j <= 1; j++) {
-        if (i === 0 && j === 0) continue; // Skip the cell itself
+function stop() {
+  playBtn.disabled = false;
+  stopBtn.disabled = true;
+  clearInterval(intervalId);
+  intervalId = null;
+}
 
-        // Modulo to wrap around the edges
-        const newRow = (row + i + rows) % rows;
-        const newCol = (col + j + columns) % columns;
+function clear() {
+  stop();
+  matrix = createEmptyMatrix();
+  updateGrid();
+}
 
-        if (matrix[newRow][newCol]) count++;
-      }
-    }
+function resizeAndResetGrid() {
+  calculateGridSize();
+  matrix = createEmptyMatrix();
+  renderGrid();
+}
 
-    return count;
+// Event listeners
+playBtn.addEventListener("click", play);
+stopBtn.addEventListener("click", stop);
+clearBtn.addEventListener("click", clear);
+speedInput.addEventListener("input", () => {
+  if (intervalId) {
+    stop();
+    play();
   }
+});
 
-  return {
-    nextGeneration,
-  };
-})();
-
-// Game Controller Module - Manages user interaction and game state
-const GameController = (function () {
-  let gameInterval = null;
-  let isGameRunning = false;
-
-  function initialize() {
-    setupEventListeners();
-  }
-
-  function setupEventListeners() {
-    const gridForm = document.getElementById("grid-form");
-    const startButton = document.getElementById("start-button");
-    const stopButton = document.getElementById("stop-button");
-    const clearButton = document.getElementById("clear-button");
-    const speedInput = document.getElementById("speed-input");
-
-    gridForm.addEventListener("submit", handleGridFormSubmit);
-    startButton.addEventListener("click", startGame);
-    stopButton.addEventListener("click", stopGame);
-    clearButton.addEventListener("click", clearGrid);
-    speedInput.addEventListener("input", handleSpeedChange);
-  }
-
-  function handleGridFormSubmit(e) {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const cellSize = formData.get("cell-size");
-
-    if (!cellSize || cellSize < 20) {
-      alert("Please enter a valid cell size (minimum 20px)");
-      return;
-    }
-
-    const { rows, columns } = Config.setCellSize(cellSize);
-
-    // Show game container and hide setup
-    document.getElementById("setup-container").style.display = "none";
-    document.getElementById("game-container").style.display = "block";
-
-    Grid.initialize(rows, columns);
-    e.target.reset();
-  }
-
-  window.addEventListener("resize", () => {
-    if (document.getElementById("game-container").style.display !== "none") {
-      Config.updateDimensions();
-      Grid.initialize(Config.getRows(), Config.getColumns());
-    }
-  });
-
-  function startGame() {
-    if (isGameRunning) return;
-
-    isGameRunning = true;
-    gameInterval = setInterval(() => {
-      const nextMatrix = GameEngine.nextGeneration(Grid.getMatrix());
-      Grid.setMatrix(nextMatrix);
-      Grid.updateGrid();
-    }, Config.getGameSpeed());
-  }
-
-  function stopGame() {
-    if (!isGameRunning) return;
-
-    isGameRunning = false;
-    clearInterval(gameInterval);
-  }
-
-  function clearGrid() {
-    Grid.resetMatrix();
-  }
-
-  function handleSpeedChange(e) {
-    const newSpeed = Config.setGameSpeed(e.target.value);
-
-    if (isGameRunning) {
-      clearInterval(gameInterval);
-      gameInterval = setInterval(() => {
-        const nextMatrix = GameEngine.nextGeneration(Grid.getMatrix());
-        Grid.setMatrix(nextMatrix);
-        Grid.updateGrid();
-      }, newSpeed);
+window.addEventListener("resize", () => {
+  // Mantener patrón si es posible
+  const oldMatrix = matrix;
+  const oldRows = rows,
+    oldCols = cols;
+  calculateGridSize();
+  const newMatrix = createEmptyMatrix();
+  for (let r = 0; r < Math.min(rows, oldRows); r++) {
+    for (let c = 0; c < Math.min(cols, oldCols); c++) {
+      newMatrix[r][c] = oldMatrix[r][c];
     }
   }
+  matrix = newMatrix;
+  renderGrid();
+});
 
-  function toggleCell(event) {
-    const cell = event.target;
-    const index = parseInt(cell.dataset.index, 10);
-    const columns = Config.getColumns();
-    const row = Math.floor(index / columns);
-    const col = index % columns;
-    const matrix = Grid.getMatrix();
+// Inicialización
+function init() {
+  stopBtn.disabled = true;
+  calculateGridSize();
+  matrix = createEmptyMatrix();
+  renderGrid();
+}
 
-    cell.classList.toggle("alive");
-    matrix[row][col] = !matrix[row][col];
-
-    console.log(
-      `Cell at (${row}, ${col}) is now ${matrix[row][col] ? "alive" : "dead"}`
-    );
-  }
-
-  return {
-    initialize,
-    toggleCell,
-  };
-})();
-
-// Initialize the application when DOM is ready
-document.addEventListener("DOMContentLoaded", GameController.initialize);
+init();
