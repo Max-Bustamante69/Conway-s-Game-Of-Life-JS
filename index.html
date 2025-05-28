@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <script type="module" src="./script.js" defer></script>
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>Conway's Game Of Life</h1>
+    <!-- <{tagname}> </{tagname}> -->
+    <div class="grid-container">
+
+    </div>
+    <form action="" id="grid-form" method="get">
+
+        <label for="cell-size">Enter the width of your cells (px)</label>
+        <input min="20"  name="cell-size" type="number">
+        <button type="submit">submit</button>
+    </form>
+    <!-- const startButton = document.getElementById("start-button");
+    const stopButton = document.getElementById("stop-button");
+    const clearButton = document.getElementById("clear-button");
+    const speedInput = document.getElementById("speed-input"); -->
+    <div class="controls">
+        <button id="start-button">Start</button>
+        <button id="stop-button">Stop</button>
+        <button id="clear-button">Clear</button>
+        <input type="number" id="speed-input" placeholder="Speed">
+        <button id="set-speed-button">Set Speed</button>
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,200 @@
+:root {
+  --cell-size: 20px;
+  --grid-width: 600px;
+  --grid-height: 600px;
+  --alive-color: #fff;
+  --dead-color: #181818;
+  --border-color: #444;
+  --accent: #00e0ff;
+  --button-bg: #222;
+  --button-hover: #00e0ff;
+  --button-text: #fff;
+  --input-bg: #222;
+  --input-text: #fff;
+  --input-border: #444;
+}
+
+body {
+  background: linear-gradient(135deg, #181818 0%, #232526 100%);
+  color: var(--button-text);
+  min-height: 100vh;
+  font-family: 'Segoe UI', 'Arial', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 0;
+  padding: 0;
+}
+
+h1{
+  background-image: linear-gradient(135deg, #00e0ff 0%, #fff 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  background-size: 200% 200%;
+  color: transparent;
+  font-size: 2.5rem;
+  margin: 24px 0;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  line-height: 1.2;
+  font-family: 'Segoe UI', 'Arial', sans-serif;
+  animation: pan-background 2s linear infinite;
+
+}
+
+
+
+.grid-container {
+  display: grid;
+  width: 90vw;
+  height: 90vw;
+  max-width: 98vw;
+  max-height: 70vh;
+  aspect-ratio: 1 / 1;
+  grid-template-columns: repeat(var(--grid-columns), 1fr);
+  grid-template-rows: repeat(var(--grid-rows), 1fr);
+  background: #222;
+  border-radius: 12px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.4);
+  margin: 32px 0 24px 0;
+  border: 2px solid var(--accent);
+  overflow: hidden;
+  transition: width 0.3s, height 0.3s;
+}
+
+.grid-cell {
+  border: 0.5px solid var(--border-color);
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  background: var(--dead-color);
+  transition: background 0.1s, box-shadow 0.1s;
+  cursor: pointer;
+}
+
+.grid-cell.alive {
+  background: var(--alive-color);
+}
+
+form#grid-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  background: rgba(34,34,34,0.8);
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+}
+
+form#grid-form label {
+  font-size: 1rem;
+  margin-right: 8px;
+}
+
+form#grid-form input[type="number"] {
+  width: 80px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--input-text);
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.1s linear;
+}
+
+form#grid-form input[type="number"]:focus {
+  border: 1.5px solid var(--accent);
+}
+
+form#grid-form button {
+  background: var(--button-bg);
+  color: var(--button-text);
+  border: none;
+  border-radius: 4px;
+  padding: 7px 16px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+form#grid-form button:hover {
+  background: var(--button-hover);
+  color: #222;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.controls button {
+  background: var(--button-bg);
+  color: var(--button-text);
+  border: none;
+  border-radius: 4px;
+  padding: 7px 16px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.controls button:hover {
+  background: var(--button-hover);
+  color: #222;
+}
+
+.controls input[type="number"] {
+  width: 80px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--input-text);
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.1s;
+}
+
+.controls input[type="number"]:focus {
+  border: 1.5px solid var(--accent);
+}
+
+@keyframes pan-background {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Responsive tweaks */
+@media (max-width: 700px) {
+  .grid-container {
+    width: 95vw;
+    height: 95vw;
+    max-width: 98vw;
+    max-height: 98vw;
+  }
+
+  form#grid-form {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  form#grid-form label {
+    margin-bottom: 8px;
+  }
+
+  .controls {
+    flex-wrap: wrap;
+    width: 70%;
+  }
+}
